@@ -24,6 +24,28 @@ class NeuralNetwork {
         // Return final outputs which determine the car's next actions
         return outputs;
     }
+
+    static mutate(network, amount=1) {
+        network.levels.forEach(level => {
+            for (let i = 0; i < level.biases.length; i++) {
+                level.biases[i] = lerp(
+                    level.biases[i],
+                    Math.random() * 2 - 1, // Random value between [-1, 1]
+                    amount                 // Scale of random value
+                );
+            }
+
+            for (let i = 0; i < level.weights.length; i++) {
+                for (let j = 0; j < level.weights[i].length; j++) {
+                    level.weights[i][j] = lerp(
+                        level.weights[i][j],
+                        Math.random() * 2 - 1,
+                        amount
+                    );
+                }
+            }
+        });
+    }
 }
 
 class Level {
