@@ -4,12 +4,22 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div style="margin: 10px; text-align:right">
+        <h3 id="simulationTimer">Simulation duration: 0</h3>
+        <h3 id="bestCarTimer">0</h3>
+        <h3 id="mostCarsPassed">Most cars passed: 0</h3>
+        <h3 id="currentMostCarsPassed">Current passed: 0</h3>
+        <h3 id="carsAlive">Cars alive: 0</h3>
+        <h3 id="genCounter">Gen: 0</h3>
+    </div>
     <canvas id="carCanvas"></canvas>
-    <div id=""verticalButtons">
+    <div id="verticalButtons">
         <button onclick="save()">💾</button>
         <button onclick="discard()">🗑️</button>
+        <button id="drawBarChartButton" onclick="drawBarChart()">📊</button>
     </div>
     <canvas id="networkCanvas"></canvas>
+    <canvas id="barChartCanvas"></canvas>
     <script src="network.js"></script>
     <script src="visualizer.js"></script>
     <script src="controls.js"></script>
@@ -17,6 +27,8 @@
     <script src="utils.js"></script>
     <script src="road.js"></script>
     <script src="car.js"></script>
+    <script src="simStats.js"></script>
+    <script src="barChart.js"></script>
     <script src="main.js"></script>
 </body>
 </html>

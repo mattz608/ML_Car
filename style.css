@@ -10,7 +10,9 @@ body {
 #verticalButtons {
     display: flex;
     flex-direction: column;
+    width: 50px;
 }
+
 
 button {
     border: none;
@@ -27,7 +29,6 @@ button:hover {
 #networkCanvas {
     background: black;
 }
-
 
 #carCanvas {
     background: lightgray;

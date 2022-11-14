@@ -21,12 +21,23 @@ class Car {
             );
         }
         this.controls = new Controls(controlType);
+
+        this.carsPassed = 0;
+        this.lastTimePassedCar = Date.now();
     }
 
-    update(roadBorders, traffic) {
+    update(roadBorders, traffic, trafficDeleted=0) {
         if (!this.damaged) {
             this.#move();
             this.polygon = this.#createPolygon();
+
+            let numTrafficPassed = traffic.length - traffic.filter(t => t.y < this.y).length + trafficDeleted;
+            if (this.carsPassed < numTrafficPassed)
+            {
+                this.carsPassed = numTrafficPassed;
+                this.lastTimePassedCar = Date.now();
+            }
+
             this.damaged = this.#assessDamage(roadBorders, traffic);
         }
 
