@@ -17,32 +17,34 @@ class Car {
         if (controlType != "DUMMY") {
             this.sensor = new Sensor(this);
             this.brain = new NeuralNetwork(
-                [this.sensor.rayCount, 6, 4] // Creates NN with one hidden layer (Last layer is controls output)
+                [this.sensor.rayCount, 8, 4] // Creates NN with one hidden layer (Last layer is controls output)
             );
         }
         this.controls = new Controls(controlType);
 
         this.carsPassed = 0;
         this.lastTimePassedCar = Date.now();
+        this.polygon = this.#createPolygon();
     }
 
-    update(roadBorders, traffic, trafficDeleted=0) {
+    update(roadBorders, traffic={cars:[], trafficDeleted:0}) {
         if (!this.damaged) {
             this.#move();
             this.polygon = this.#createPolygon();
 
-            let numTrafficPassed = traffic.length - traffic.filter(t => t.y < this.y).length + trafficDeleted;
+            // Update number of traffic cars passed
+            let numTrafficPassed = traffic.cars.length - traffic.cars.filter(t => t.y < this.y).length + traffic.trafficDeleted;
             if (this.carsPassed < numTrafficPassed)
             {
                 this.carsPassed = numTrafficPassed;
                 this.lastTimePassedCar = Date.now();
             }
 
-            this.damaged = this.#assessDamage(roadBorders, traffic);
+            this.damaged = this.#assessDamage(roadBorders, traffic.cars);
         }
 
         if (this.sensor) {
-            this.sensor.update(roadBorders, traffic);
+            this.sensor.update(roadBorders, traffic.cars);
             const offsets = this.sensor.readings.map(
                 s => s == null ? 0 : 1 - s.offset
             );

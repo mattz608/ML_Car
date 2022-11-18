@@ -1,32 +1,32 @@
 const carCanvas = document.getElementById("carCanvas");
-const networkCanvas = document.getElementById("networkCanvas");
-networkCanvas.width = 300;
-
 const carCtx = carCanvas.getContext("2d");
+
+const networkCanvas = document.getElementById("networkCanvas");
+networkCanvas.width = 0;
 const networkCtx = networkCanvas.getContext("2d");
+let networkVisualizerEnabled = false;
 
 let laneCount = 4;
 carCanvas.width = laneCount * 66;
-
 const road = new Road(carCanvas.width/2, carCanvas.width*0.9, laneCount);
 
 const N = 1000;
 let cars = generateCars(N);
 
+// Best car and brain initialization
 let bestCar = cars[0];
+const previousBestCar = bestCar;
 if (localStorage.getItem("bestBrain")) {
     for (let i = 0; i < cars.length; i++) {
         cars[i].brain = JSON.parse(localStorage.getItem("bestBrain"));;
         if (i != 0) {
-            NeuralNetwork.mutateLinear(cars[i].brain, 0.2);
+            NeuralNetwork.mutateLinear(cars[i].brain, 0.1);
         }
     }
 }
 
-const incrementalTrafficGenerationRowCount = 4;
-let traffic = generateTraffic(incrementalTrafficGenerationRowCount);
-let lastTraffic = traffic.find(t => t.y == Math.min(...traffic.map(t2 => t2.y)));
-let trafficDeleted = 0;
+// Traffic
+let traffic = new Traffic(30, 50, 2, laneCount, 4);
 
 let simStats = new SimStats();
 simStats.carsPassedPerGeneration.push(0);
@@ -68,6 +68,12 @@ function drawBarChart() {
     barChartContext.canvas.height = drawBarChartEnabled ? 600 : 0;
 }
 
+function drawNetworkVisualizer()
+{
+    networkVisualizerEnabled = networkVisualizerEnabled == false;
+    networkCanvas.width = networkVisualizerEnabled ? 400 : 0;
+}
+
 function generateCars(N) {
     const cars = [];
     for (let i = 0; i < N; i++) {
@@ -77,53 +83,11 @@ function generateCars(N) {
     return cars;
 }
 
-function generateTraffic(N, start=-100)
+function updateDisplayedStats()
 {
-    const traffic = [];
-    let currentY = start;
-    
-    for (let i = 0; i < N; i++) {
-        let availableLanes = Array.from(Array(laneCount).keys());
-        let numCars = Math.floor(Math.random() * (laneCount - 1) + 1);
-        for (let j = 0; j < numCars; j++) {
-            traffic.push(
-                new Car(
-                    road.getLaneCenter(
-                        availableLanes.splice(Math.floor(Math.random() * availableLanes.length), 1)[0]
-                    ),
-                    currentY,
-                    30,
-                    50,
-                    "DUMMY",
-                    2
-                )
-            )
-        }
-
-        currentY -= Math.floor(200 + Math.random() * 100);
-        
-    }
-
-    return traffic;
-}
-
-function animate(time) {
-    // Update objects
-    for (let i = 0; i < traffic.length; i++) {
-        traffic[i].update(road.borders,[]);
-    }
-    
-    for (let i = 0; i < cars.length; i++) {
-        cars[i].update(road.borders, traffic, trafficDeleted);
-    }
-    
-    simStats.update(bestCar);
-
-    barChart.update();
-
     // Update displayed stats
     document.getElementById("bestCarTimer").innerText = 
-        "Time since last pass: " + ((Date.now() - bestCar.lastTimePassedCar) / 1000).toFixed(2);
+    "Time since last pass: " + ((Date.now() - bestCar.lastTimePassedCar) / 1000).toFixed(2);
     document.getElementById("simulationTimer").innerText = 
         "Simulation duration: " + ((Date.now() - simStats.timeStarted) / 1000).toFixed(2);
     document.getElementById("mostCarsPassed").innerText = 
@@ -132,11 +96,19 @@ function animate(time) {
         "Cars alive: " + cars.filter(c => !c.damaged).length;
     document.getElementById("currentMostCarsPassed").innerText = 
         "Current passed: " + bestCar.carsPassed;
-    if (Date.now() - bestCar.lastTimePassedCar > 6000)
-    {
-        debugger;
+}
+
+function animate(time) {
+    // Update objects
+    traffic.update(road.borders, bestCar);
+    for (let i = 0; i < cars.length; i++) {
+        cars[i].update(road.borders, traffic);
     }
+    simStats.update(bestCar);
+    barChart.update();
     
+    updateDisplayedStats();
+
     // Determine best car
     let mostCarsPassed = Math.max(...cars.map(c => c.carsPassed));
     let candidateCars = cars.filter(c => c.carsPassed == mostCarsPassed);
@@ -156,19 +128,35 @@ function animate(time) {
 
     // Draw objects
     road.draw(carCtx);
-    for (let i = 0; i < traffic.length; i++) {
-        traffic[i].draw(carCtx, "red");
+    for (let i = 0; i < traffic.cars.length; i++) {
+        traffic.cars[i].draw(carCtx, "red");
     }
 
     // Make all other cars transparent
     carCtx.globalAlpha = 0.2;
     for (let i = 0; i < cars.length; i++) {
-        cars[i].draw(carCtx, "blue");
+        if (cars[i] != previousBestCar && cars[i] != bestCar)
+        {
+            cars[i].draw(carCtx, "blue");
+        }
     }
 
     // Make best car not transparent and has sensors
+    // Draw previous best performer green
     carCtx.globalAlpha = 1;
-    bestCar.draw(carCtx, "blue", true);
+    if (previousBestCar == bestCar)
+    {
+        bestCar.draw(carCtx, "green", true);
+    }
+    else
+    {
+        bestCar.draw(carCtx, "blue", true);
+
+        if (cars.includes(previousBestCar))
+        {
+            previousBestCar.draw(carCtx, "green");
+        }
+    }
 
     if (drawBarChartEnabled) {
         barChart.draw();
@@ -176,18 +164,11 @@ function animate(time) {
     
     carCtx.restore();
 
-    // Manage traffic generation and clean-up
-    if (Math.abs(bestCar.y - lastTraffic.y) < 500) {
-        trafficDeleted += traffic.length;
-        traffic = traffic.filter(t => t.y < bestCar.y || Math.abs(t.y - bestCar.y) < 500);
-        trafficDeleted -= traffic.length; // Super ugly way of keeping track of this... but oh well
-
-        traffic.push(...generateTraffic(incrementalTrafficGenerationRowCount, lastTraffic.y - 200));
-        lastTraffic = traffic.find(t => t.y == Math.min(...traffic.map(t2 => t2.y)));
+    if (networkVisualizerEnabled)
+    {
+        networkCtx.lineDashOffset=time/50;
+        Visualizer.drawNetwork(networkCtx, bestCar.brain);
     }
-
-    networkCtx.lineDashOffset=time/50;
-    Visualizer.drawNetwork(networkCtx, bestCar.brain);
 
     // Check if we should go on to next generation
     reloadIfDone();

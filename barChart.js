@@ -35,7 +35,7 @@ class BarChart {
             this.ctx.save()
             this.ctx.fillStyle = this.options.gridColor;
             this.ctx.textBaseline = "bottom";
-            this.ctx.font = "bold 10px Arial";
+            this.ctx.font = "bold 20px Arial";
             this.ctx.fillText(gridValue, 0, gridY - 2);
             this.ctx.restore();
         }
