@@ -28,17 +28,17 @@ let barChart = new BarChart({
     canvas: barChartCanvas,
     colors: ["#ffffff"],
     data: simStats,
-    gridScale: 10,
+    gridScale: 100,
     gridColor: "#ffffff"
 });
 
 // Generate cars
-const N = 200;
+const N = 800;
 let cars = generateCars(N);
 
 // Algorithm initialization
-algClasses = [LinearVariation];
-alg = new algClasses[0](cars, traffic);
+algClasses = [LinearVariation, GeneticEvolution];
+alg = new algClasses[1](cars, traffic);
 
 // Best car
 let bestCar = cars[0];
