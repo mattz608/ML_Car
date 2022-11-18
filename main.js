@@ -1,42 +1,28 @@
+// Car canvas
 const carCanvas = document.getElementById("carCanvas");
 const carCtx = carCanvas.getContext("2d");
 
+// Network canvas
 const networkCanvas = document.getElementById("networkCanvas");
 networkCanvas.width = 0;
 const networkCtx = networkCanvas.getContext("2d");
-let networkVisualizerEnabled = false;
 
+// Road
 let laneCount = 4;
 carCanvas.width = laneCount * 66;
 const road = new Road(carCanvas.width/2, carCanvas.width*0.9, laneCount);
 
-const N = 1000;
-let cars = generateCars(N);
-
-// Best car and brain initialization
-let bestCar = cars[0];
-const previousBestCar = bestCar;
-if (localStorage.getItem("bestBrain")) {
-    for (let i = 0; i < cars.length; i++) {
-        cars[i].brain = JSON.parse(localStorage.getItem("bestBrain"));;
-        if (i != 0) {
-            NeuralNetwork.mutateLinear(cars[i].brain, 0.1);
-        }
-    }
-}
-
 // Traffic
 let traffic = new Traffic(30, 50, 2, laneCount, 4);
 
+// Sim stats
 let simStats = new SimStats();
 simStats.carsPassedPerGeneration.push(0);
-
 document.getElementById("genCounter").innerText = "Gen: " + simStats.generation;
 
 // Bar chart
 let barChartCanvas = document.getElementById("barChartCanvas");
 let barChartContext = barChartCanvas.getContext("2d");
-let drawBarChartEnabled = false;
 barChartContext.canvas.width = 0;
 let barChart = new BarChart({
     canvas: barChartCanvas,
@@ -46,10 +32,24 @@ let barChart = new BarChart({
     gridColor: "#ffffff"
 });
 
+// Generate cars
+const N = 200;
+let cars = generateCars(N);
+
+// Algorithm initialization
+algClasses = [LinearVariation];
+alg = new algClasses[0](cars, traffic);
+
+// Best car
+let bestCar = cars[0];
+
+// Brain initializations
+const previousBestCar = bestCar;
+
 animate();
 
 function save() {
-    localStorage.setItem("bestBrain", JSON.stringify(bestCar.brain));
+    alg.save();
 
     simStats.generation += 1;
     localStorage.setItem("simStats", JSON.stringify(simStats));
@@ -57,21 +57,19 @@ function save() {
 }
 
 function discard() {
-    localStorage.removeItem("bestBrain");
+    alg.discard();
+
     localStorage.removeItem("simStats");
     window.location.reload();
 }
 
 function drawBarChart() {
-    drawBarChartEnabled = drawBarChartEnabled == false;
-    barChartContext.canvas.width = drawBarChartEnabled ? 600 : 0;
-    barChartContext.canvas.height = drawBarChartEnabled ? 600 : 0;
+    simStats.barChartEnabled = simStats.barChartEnabled == false;
 }
 
 function drawNetworkVisualizer()
 {
-    networkVisualizerEnabled = networkVisualizerEnabled == false;
-    networkCanvas.width = networkVisualizerEnabled ? 400 : 0;
+    simStats.networkVisualizerEnabled = simStats.networkVisualizerEnabled == false;
 }
 
 function generateCars(N) {
@@ -110,12 +108,9 @@ function animate(time) {
     updateDisplayedStats();
 
     // Determine best car
-    let mostCarsPassed = Math.max(...cars.map(c => c.carsPassed));
-    let candidateCars = cars.filter(c => c.carsPassed == mostCarsPassed);
-    newBestCar = candidateCars.find(c => c.y == Math.min(...candidateCars.map(c2 => c2.y)));
-    bestCar = newBestCar;
+    bestCar = alg.getBestCar();
 
-    // Get rid of unnecessary cars
+    // Get rid of unnecessary AI cars
     cars = cars.filter(c => c.y <= bestCar.y || Math.abs(c.y - bestCar.y) < 250 || c.carsPassed == mostCarsPassed);
 
     // Resize canvases to be height of the screen
@@ -158,13 +153,16 @@ function animate(time) {
         }
     }
 
-    if (drawBarChartEnabled) {
+    barChartContext.canvas.width = simStats.barChartEnabled ? 600 : 0;
+    barChartContext.canvas.height = simStats.barChartEnabled ? 600 : 0;
+    if (simStats.barChartEnabled) {
         barChart.draw();
     }
     
     carCtx.restore();
 
-    if (networkVisualizerEnabled)
+    networkCanvas.width = simStats.networkVisualizerEnabled ? 400 : 0;
+    if (simStats.networkVisualizerEnabled)
     {
         networkCtx.lineDashOffset=time/50;
         Visualizer.drawNetwork(networkCtx, bestCar.brain);
@@ -173,15 +171,15 @@ function animate(time) {
     // Check if we should go on to next generation
     reloadIfDone();
 
-    if (bestCar.carsPassed < traffic.length || bestCar.y > lastTraffic.y - 10 * bestCar.height)
+    if (bestCar.carsPassed < traffic.length || bestCar.y > traffic.last.y - 10 * bestCar.height)
     {
         requestAnimationFrame(animate);
     }
 }
 
 function reloadIfDone() {
-    let stuckInTraffic = Date.now() - bestCar.lastTimePassedCar > 5000 && bestCar.y > lastTraffic.y; // best car is stuck in traffic for more than 5 seconds
-    //let pastTraffic = bestCar.y + (10 * bestCar.height) < lastTraffic.y; // best car has passed all traffic and survived for 10 more car lengths
+    let stuckInTraffic = Date.now() - bestCar.lastTimePassedCar > 5000 && bestCar.y > traffic.last.y; // best car is stuck in traffic for more than 5 seconds
+    //let pastTraffic = bestCar.y + (10 * bestCar.height) < traffic.last.y; // best car has passed all traffic and survived for 10 more car lengths
     if (stuckInTraffic) {
         save();
     }

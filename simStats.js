@@ -5,6 +5,8 @@ class SimStats {
         this.timeStarted = Date.now();
         this.mostCarsPassed = 0;
         this.carsPassedPerGeneration = [];
+        this.barChartEnabled = false;
+        this.networkVisualizerEnabled = false;
 
         if (localStorage.getItem("simStats"))
         {
