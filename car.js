@@ -28,30 +28,34 @@ class Car {
     }
 
     update(roadBorders, traffic={cars:[], trafficDeleted:0}) {
-        if (!this.damaged) {
-            this.#move();
-            this.polygon = this.#createPolygon();
-
-            // Update number of traffic cars passed
-            let numTrafficPassed = traffic.cars.length - traffic.cars.filter(t => t.y < this.y).length + traffic.trafficDeleted;
-            if (this.carsPassed < numTrafficPassed)
-            {
-                this.carsPassed = numTrafficPassed;
-                this.lastTimePassedCar = Date.now();
-            }
-
-            this.damaged = this.#assessDamage(roadBorders, traffic.cars);
+        if (this.damaged) {
+            return;
         }
 
+        this.#move();
+        this.polygon = this.#createPolygon();
+
+        // Update number of traffic cars passed
+        let numTrafficPassed = traffic.cars.length - traffic.cars.filter(t => t.y < this.y).length + traffic.trafficDeleted;
+        if (this.carsPassed < numTrafficPassed)
+        {
+            this.carsPassed = numTrafficPassed;
+            this.lastTimePassedCar = Date.now();
+        }
+
+        let relevantTraffic = traffic.cars.filter(t => distanceBetween(t.x, t.y, this.x, this.y) < this.sensor.rayLength ?? this.height * 2);
+
+        this.damaged = this.#assessDamage(roadBorders, relevantTraffic);
+
         if (this.sensor) {
-            this.sensor.update(roadBorders, traffic.cars);
+            this.sensor.update(roadBorders, relevantTraffic);
             const offsets = this.sensor.readings.map(
                 s => s == null ? 0 : 1 - s.offset
             );
             
             const outputs = NeuralNetwork.feedForward(offsets, this.brain);
 
-            if (this.useBrain ) {
+            if (this.useBrain) {
                 this.controls.forward = outputs[0];
                 this.controls.left = outputs[1];
                 this.controls.right = outputs[2];
@@ -61,13 +65,16 @@ class Car {
     }
 
     #assessDamage(roadBorders, traffic) {
-        for (let i = 0; i < roadBorders.length; i++) {
-            if (polyIntersect(this.polygon, roadBorders[i])) {
+
+        for (const border of roadBorders)
+        {
+            if (polyIntersect(this.polygon, border)) {
                 return true;
             }
         }
+
         for (let i = 0; i < traffic.length; i++) {
-            if (polyIntersect(this.polygon,traffic[i].polygon))
+            if (polyIntersect(this.polygon, traffic[i].polygon))
             {
                 return true;
             }

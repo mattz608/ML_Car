@@ -5,7 +5,24 @@ class Sensor {
         this.rayLength = 200;
         this.raySpread = 3 * Math.PI/4; // Field of view
 
-        this.rays = [];
+        // Each ray has 2 elements [startPoint, endPoint] (endPoint carries the angle property of the ray before car rotation)
+        this.rays = Array.from(Array(this.rayCount).keys()).map(r => 
+            [
+                {
+                    x: null, 
+                    y: null,
+                }, 
+                {
+                    x: null,
+                    y: null,
+                    angle: lerp(
+                        this.raySpread/2,
+                        -this.raySpread/2,
+                        this.rayCount == 1 ? 0.5 : r/(this.rayCount-1) // rayCount - 1 is the amount of spaces between the rays
+                    )
+                }
+            ]
+        );
         this.readings = [];
     }
 
@@ -25,60 +42,47 @@ class Sensor {
     #getReading(ray, roadBorders, traffic) {
         let touches = [];
 
-        for (let i = 0; i < roadBorders.length; i++) {
+        let minTouch = { x: ray[1].x, y: ray[1].y, offset: 1 };
+
+        for (let border of roadBorders)
+        {
             const touch = getIntersection(
                 ray[0],
                 ray[1],
-                roadBorders[i][0],
-                roadBorders[i][1],
+                border[0],
+                border[1]
             );
-            if (touch) {
-                touches.push(touch);
+            if (touch && touch.offset < minTouch.offset) {
+                minTouch = touch;
+                break;
             }
         }
 
         for (let i = 0; i < traffic.length; i++) {
             const poly = traffic[i].polygon;
             for (let j = 0; j < poly.length; j++) {
-                const value = getIntersection(
+                const touch = getIntersection(
                     ray[0],
                     ray[1],
                     poly[j],
                     poly[(j+1) % poly.length]
                 );
-                if (value) {
-                    touches.push(value);
+                if (touch && touch.offset < minTouch.offset) {
+                    minTouch = touch;
                 }
             }
         }
 
-        if (touches.length == 0) {
-            return null;
-        } else {
-            const offsets = touches.map(e => e.offset);
-            const minOffset = Math.min(...offsets);
-            return touches.find(e => e.offset == minOffset);
-        }
+        return minTouch.offset == 1 ? null : minTouch;
     }
 
     #castRays() {
-        // Create rays
-        this.rays = [];
-        for (let i = 0; i < this.rayCount; i++) {
-
-            // Get angles spread out evenly
-            const rayAngle = lerp(
-                this.raySpread/2,
-                -this.raySpread/2,
-                this.rayCount == 1 ? 0.5 : i/(this.rayCount-1) // rayCount - 1 is the amount of spaces between the rays
-            ) + this.car.angle;
-
-            const start = {x : this.car.x, y : this.car.y};
-            const end = {
-                x : this.car.x - Math.sin(rayAngle) * this.rayLength,
-                y : this.car.y - Math.cos(rayAngle) * this.rayLength
-            };
-            this.rays.push([start, end]);
+        for (let i = 0; i < this.rays.length; i++)
+        {
+            this.rays[i][0].x = this.car.x;
+            this.rays[i][0].y = this.car.y;
+            this.rays[i][1].x = this.car.x - Math.sin(this.rays[i][1].angle + this.car.angle) * this.rayLength;
+            this.rays[i][1].y = this.car.y - Math.cos(this.rays[i][1].angle + this.car.angle) * this.rayLength;
         }
     }
 

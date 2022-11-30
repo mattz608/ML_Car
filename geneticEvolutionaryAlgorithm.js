@@ -1,12 +1,13 @@
 class GeneticEvolution {
     constructor(cars, traffic) {
         this.cars = cars;
+        this.bestCar = cars[0];
 
         this.crossoverRate = 1; // Needs to be 1 unless k-point crossover is implemented
         this.mutationRate = 0.1;
-        this.mutationAlpha = 0.1;
+        this.mutationAlpha = 0.2;
 
-        this.elitismFactor = 2; // Number of top performing parents to be carried forward unaltered
+        this.elitismFactor = 5; // Number of top performing parents to be carried forward unaltered
 
         if (localStorage.getItem("nextGenerationCandidates"))
         {
@@ -15,7 +16,7 @@ class GeneticEvolution {
         }
 
         this.traffic = traffic;
-        this.candidateRate = 0.1;
+        this.candidateRate = 0.0125;
     }
 
     mutate()
@@ -90,9 +91,17 @@ class GeneticEvolution {
 
     getBestCar()
     {
-        let mostCarsPassed = Math.max(...this.cars.map(c => c.carsPassed));
-        let candidateCars = this.cars.filter(c => c.carsPassed == mostCarsPassed);
-        return candidateCars.find(c => c.y == Math.min(...candidateCars.map(c2 => c2.y)));
+        let currBestCar = this.bestCar ?? this.cars[0];
+        for (const car of this.cars)
+        {
+            if (car.carsPassed >= currBestCar.carsPassed && car.y < currBestCar.y)
+            {
+                currBestCar = car;
+            }
+        }
+
+        this.bestCar = currBestCar;
+        return currBestCar;
     }
 
     getNextGenerationCandidates()

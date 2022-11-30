@@ -3,15 +3,22 @@ function lerp(A, B, t) {
     return A + (B - A) * t;
 }
 
+// Return the distance between points (x1,y1) and (x2,y2)
+function distanceBetween(x1, y1, x2, y2)
+{
+    return Math.sqrt(
+        Math.pow(x1 - x2, 2) +
+        Math.pow(y1 - y2, 2)
+    );
+}
+
 // Return closest intersection from A of line AB through CD
 function getIntersection(A, B, C, D) {
-    const tNumerator = (D.x-C.x)*(A.y-C.y) - (D.y-C.y)*(A.x-C.x);
-    const uNumerator = (C.y-A.y)*(A.x-B.x) - (C.x-A.x)*(A.y-B.y);
     const denominator = (D.y-C.y)*(B.x-A.x) - (D.x-C.x)*(B.y-A.y);
 
-    if (denominator != 0) {
-        const t = tNumerator / denominator;
-        const u = uNumerator / denominator;
+    if (denominator != 0) {        
+        const t = ((D.x-C.x)*(A.y-C.y) - (D.y-C.y)*(A.x-C.x)) / denominator;
+        const u = ((C.y-A.y)*(A.x-B.x) - (C.x-A.x)*(A.y-B.y)) / denominator;
 
         if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
             return {
