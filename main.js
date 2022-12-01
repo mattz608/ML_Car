@@ -8,7 +8,7 @@ networkCanvas.width = 0;
 const networkCtx = networkCanvas.getContext("2d");
 
 // Road
-let laneCount = 4;
+let laneCount = 5;
 carCanvas.width = laneCount * 66;
 const road = new Road(carCanvas.width/2, carCanvas.width*0.9, laneCount);
 
@@ -29,12 +29,12 @@ let barChart = new BarChart({
     canvas: barChartCanvas,
     colors: ["#ffffff"],
     data: simStats,
-    gridScale: 10,
+    gridScale: 100,
     gridColor: "#ffffff"
 });
 
 // Generate cars
-const N = 800;
+const N = 2000;
 let cars = generateCars(N);
 
 // Algorithm initialization
@@ -57,7 +57,14 @@ function save() {
 
     alg.save();
     localStorage.setItem("simStats", JSON.stringify(simStats));
+
     window.location.reload();
+    /*
+    // For stopping the animation for a specific condition. Refresh to continue
+    if (simStats.generation != 30)
+    {
+        window.location.reload();
+    }*/
 }
 
 function discard() {
@@ -89,13 +96,19 @@ function updateDisplayedStats()
 {
     // Update displayed stats
     document.getElementById("bestCarTimer").innerText = 
-    "Time since last pass: " + ((Date.now() - bestCar.lastTimePassedCar) / 1000).toFixed(2);
+    "Time since last pass: " + ((Date.now() - bestCar.lastTimePassedCar) / 1000).toFixed(2) + "s";
     document.getElementById("simulationTimer").innerText = 
-        "Simulation duration: " + ((Date.now() - simStats.timeStarted) / 1000).toFixed(2);
+        "Simulation duration: " + convertMillisecondsToDaysHoursMinutesSeconds(Date.now() - simStats.timeStarted);
+    document.getElementById("trialTimer").innerText = 
+        "Trial duration: " + convertMillisecondsToDaysHoursMinutesSeconds(Date.now() - simStats.trialStartTime);
     document.getElementById("mostCarsPassed").innerText = 
         "Most cars passed: " + simStats.mostCarsPassed;
+    document.getElementById("lastCarsPassed").innerText = 
+        "Cars passed last trial: " + (simStats.carsPassedPerGeneration.length >= 2 
+                                        ? simStats.carsPassedPerGeneration[simStats.carsPassedPerGeneration.length-2] 
+                                        : "N/A") ;
     document.getElementById("carsAlive").innerText = 
-        "Cars alive: " + cars.filter(c => !c.damaged).length;
+        "Cars alive: " + cars.reduce((alive, c) => alive += (!c.damaged), 0);
     document.getElementById("currentMostCarsPassed").innerText = 
         "Current passed: " + bestCar.carsPassed;
 }
@@ -112,8 +125,8 @@ function animate(time) {
     updateDisplayedStats();
 
     // Determine best car. Wait to switch perspectives so we can avoid determining new best cars every frame when crowds crash
-    let nextBestCar = alg.getBestCar();
-    if (nextBestCar != lastBestCar && Date.now() - lastTimeBestCarChanged > 3000)
+    let nextBestCar = alg.getBestCar(cars);
+    if (nextBestCar != lastBestCar && Date.now() - lastTimeBestCarChanged > 500)
     {
         bestCar = nextBestCar;
         lastBestCar = bestCar;
@@ -121,7 +134,10 @@ function animate(time) {
     }
 
     // Get rid of unnecessary AI cars
-    cars = cars.filter(c => c.y <= bestCar.y || Math.abs(c.y - bestCar.y) < 400 || c.carsPassed == mostCarsPassed);
+    cars = cars.filter(c => 
+        c.damaged == false && c.y <= bestCar.y + 600 ||
+        c.damaged == true && c.y <= -nextBestCar.y + carCanvas.height
+    );
 
     // Resize canvases to be height of the screen
     carCanvas.height = window.innerHeight;
@@ -129,7 +145,8 @@ function animate(time) {
 
     // Focus "camera" above car
     carCtx.save();
-    carCtx.translate(0, -bestCar.y + carCanvas.height * 0.7);
+    carCtx.translate(0, -nextBestCar.y + carCanvas.height * 0.5);
+    
 
     // Draw objects
     road.draw(carCtx);
@@ -155,7 +172,7 @@ function animate(time) {
     }
     else
     {
-        bestCar.draw(carCtx, "blue", true);
+        bestCar.draw(carCtx, "black", true);
 
         if (cars.includes(previousBestCar))
         {
@@ -178,20 +195,15 @@ function animate(time) {
         Visualizer.drawNetwork(networkCtx, bestCar.brain);
     }
 
-    // Check if we should go on to next generation
-    reloadIfDone();
-
-    if (bestCar.y > road.top)
+    let stuckInTraffic = Date.now() - bestCar.lastTimePassedCar > 5000; // best car is stuck in traffic for more than 5 seconds
+    let allDead = !cars.some(c => c.damaged == false);
+    if (!stuckInTraffic && !allDead)
     {
         requestAnimationFrame(animate);
     }
-}
-
-function reloadIfDone() {
-    let stuckInTraffic = Date.now() - bestCar.lastTimePassedCar > 5000 && bestCar.y; // best car is stuck in traffic for more than 5 seconds
-    
-    if (stuckInTraffic) {
-        console.log("Stuck in traffic. Reloading: " + Date.now());
+    else
+    {
+        console.log("Reloading: " + Date.now());
         save();
     }
 }

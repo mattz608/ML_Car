@@ -36,7 +36,7 @@ class Car {
         this.polygon = this.#createPolygon();
 
         // Update number of traffic cars passed
-        let numTrafficPassed = traffic.cars.length - traffic.cars.filter(t => t.y < this.y).length + traffic.trafficDeleted;
+        let numTrafficPassed = traffic.cars.length - traffic.cars.reduce((ahead, t) => ahead += (t.y < this.y), 0) + traffic.trafficDeleted;
         if (this.carsPassed < numTrafficPassed)
         {
             this.carsPassed = numTrafficPassed;
@@ -150,10 +150,10 @@ class Car {
         if (this.speed != 0) {
             const flip = this.speed > 0 ? 1 : -1;
             if (this.controls.left) {
-                this.angle += 0.03 * flip;
+                this.angle += 0.04 * flip;
             }
             if (this.controls.right) {
-                this.angle -= 0.03 * flip;
+                this.angle -= 0.04 * flip;
             }
         }
 

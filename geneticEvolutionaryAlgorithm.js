@@ -5,7 +5,7 @@ class GeneticEvolution {
 
         this.crossoverRate = 1; // Needs to be 1 unless k-point crossover is implemented
         this.mutationRate = 0.1;
-        this.mutationAlpha = 0.2;
+        this.mutationAlpha = 0.15;
 
         this.elitismFactor = 5; // Number of top performing parents to be carried forward unaltered
 
@@ -16,7 +16,7 @@ class GeneticEvolution {
         }
 
         this.traffic = traffic;
-        this.candidateRate = 0.0125;
+        this.candidateRate = 0.025;
     }
 
     mutate()
@@ -89,14 +89,15 @@ class GeneticEvolution {
         }
     }
 
-    getBestCar()
+    getBestCar(cars=this.cars)
     {
-        let currBestCar = this.bestCar ?? this.cars[0];
-        for (const car of this.cars)
+        let currBestCar = this.bestCar ?? cars[0];
+
+        for (let i = 0; i < cars.length; i++)
         {
-            if (car.carsPassed >= currBestCar.carsPassed && car.y < currBestCar.y)
+            if (cars[i].carsPassed >= currBestCar.carsPassed && cars[i].y < currBestCar.y)
             {
-                currBestCar = car;
+                currBestCar = cars[i];
             }
         }
 
@@ -117,7 +118,7 @@ class GeneticEvolution {
             }
             else
             {
-                if (a.y <= b.y)
+                if (a.y <= b.y) 
                 {
                     return -1;
                 }

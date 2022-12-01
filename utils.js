@@ -51,3 +51,18 @@ function polyIntersect(poly1, poly2) {
 
     return false;
 }
+
+function convertMillisecondsToDaysHoursMinutesSeconds(ms)
+{
+    let seconds = ms / 1000;
+    let minutes = seconds / 60;
+    let hours = minutes / 60;
+    let days = hours / 24;
+
+    let timeString = days >= 1 ? `${Math.floor(days)}d ` : ``;
+    timeString += hours >= 1 ? `${Math.floor(hours % 24)}h ` : ``;
+    timeString += minutes >= 1 ? `${Math.floor(minutes % 60)}m ` : ``;
+    timeString += `${(seconds % 60).toFixed(2)}s`;
+
+    return timeString;
+}

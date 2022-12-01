@@ -15,6 +15,8 @@ class SimStats {
                 this[prop] = savedState[prop];
             }
         }
+
+        this.trialStartTime = Date.now();
     }
 
     update(bestCar) {
