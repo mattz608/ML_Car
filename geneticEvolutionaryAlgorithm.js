@@ -14,6 +14,10 @@ class GeneticEvolution {
         if (localStorage.getItem("nextGenerationCandidates"))
         {
             this.parentBrains = JSON.parse(localStorage.getItem("nextGenerationCandidates"));
+            if (this.eliteMode && simStats?.bestPerformer?.brain != null)
+            {
+                this.parentBrains.push(simStats.bestPerformer.brain);
+            }
             this.mutate();
         }
 

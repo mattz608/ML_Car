@@ -25,7 +25,7 @@ class SimStats {
     }
 
     save(bestCar) {
-        if (!this.bestPerformer.brain || bestCar.carsPassed >= this.bestPerformer.carsPassed)
+        if (!this.bestPerformer.brain || bestCar.carsPassed > this.bestPerformer.carsPassed)
         {
             this.bestPerformer.brain = bestCar.brain;
             this.bestPerformer.carsPassed = bestCar.carsPassed;
