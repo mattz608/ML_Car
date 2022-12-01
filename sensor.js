@@ -1,6 +1,5 @@
 class Sensor {
-    constructor(car) {
-        this.car = car;
+    constructor() {
         this.rayCount = 12;
         this.rayLength = 200;
         this.raySpread = 3 * Math.PI/4; // Field of view
@@ -26,16 +25,12 @@ class Sensor {
         this.readings = [];
     }
 
-    update(roadBorders, traffic) {
-        this.#castRays();
+    update(x, y, t, roadBorders, traffic) {
+        this.#castRays(x, y, t);
 
-        this.readings = [];
+        this.readings = this.readings.length ? this.readings : Array.from(Array(this.rayCount).keys());
         for (let i = 0; i < this.rays.length; i++) {
-            this.readings.push(
-                this.#getReading(this.rays[i], 
-                    roadBorders, 
-                    traffic)
-            );
+            this.readings[i] = this.#getReading(this.rays[i], roadBorders, traffic)
         }
     }
 
@@ -76,13 +71,13 @@ class Sensor {
         return minTouch.offset == 1 ? null : minTouch;
     }
 
-    #castRays() {
+    #castRays(x, y, t) {
         for (let i = 0; i < this.rays.length; i++)
         {
-            this.rays[i][0].x = this.car.x;
-            this.rays[i][0].y = this.car.y;
-            this.rays[i][1].x = this.car.x - Math.sin(this.rays[i][1].angle + this.car.angle) * this.rayLength;
-            this.rays[i][1].y = this.car.y - Math.cos(this.rays[i][1].angle + this.car.angle) * this.rayLength;
+            this.rays[i][0].x = x;
+            this.rays[i][0].y = y;
+            this.rays[i][1].x = x - Math.sin(this.rays[i][1].angle + t) * this.rayLength;
+            this.rays[i][1].y = y - Math.cos(this.rays[i][1].angle + t) * this.rayLength;
         }
     }
 

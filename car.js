@@ -15,7 +15,7 @@ class Car {
         this.useBrain = controlType == "AI";
 
         if (controlType != "DUMMY") {
-            this.sensor = new Sensor(this);
+            this.sensor = new Sensor();
             this.brain = new NeuralNetwork(
                 [this.sensor.rayCount, 8, 4] // Creates NN with one hidden layer (Last layer is controls output)
             );
@@ -48,7 +48,7 @@ class Car {
         this.damaged = this.#assessDamage(roadBorders, relevantTraffic);
 
         if (this.sensor) {
-            this.sensor.update(roadBorders, relevantTraffic);
+            this.sensor.update(this.x, this.y, this.angle, roadBorders, relevantTraffic);
             const offsets = this.sensor.readings.map(
                 s => s == null ? 0 : 1 - s.offset
             );

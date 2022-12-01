@@ -7,6 +7,11 @@ class SimStats {
         this.carsPassedPerGeneration = [];
         this.barChartEnabled = false;
         this.networkVisualizerEnabled = false;
+        this.bestPerformer =
+        {
+            brain: null,
+            carsPassed: 0
+        };
 
         if (localStorage.getItem("simStats"))
         {
@@ -17,6 +22,16 @@ class SimStats {
         }
 
         this.trialStartTime = Date.now();
+    }
+
+    save(bestCar) {
+        if (!this.bestPerformer.brain || bestCar.carsPassed >= this.bestPerformer.carsPassed)
+        {
+            this.bestPerformer.brain = bestCar.brain;
+            this.bestPerformer.carsPassed = bestCar.carsPassed;
+        }
+
+        localStorage.setItem("simStats", JSON.stringify(this));
     }
 
     update(bestCar) {

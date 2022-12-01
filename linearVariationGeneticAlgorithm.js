@@ -1,5 +1,5 @@
 class LinearVariation {
-    constructor(cars, traffic)
+    constructor(cars, traffic, simStats)
     {
         this.cars = cars;
         if (localStorage.getItem("bestBrain")) {
@@ -12,6 +12,9 @@ class LinearVariation {
         }
 
         this.traffic = traffic;
+        this.simStats = simStats;
+
+        this.eliteMode = false; // Not implemented yet
     }
 
     mutate(network, amount=1)

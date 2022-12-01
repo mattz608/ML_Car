@@ -39,7 +39,7 @@ let cars = generateCars(N);
 
 // Algorithm initialization
 algClasses = [LinearVariation, GeneticEvolution];
-alg = new algClasses[1](cars, traffic);
+alg = new algClasses[1](cars, traffic, simStats);
 
 // Best car
 let bestCar = cars[0];
@@ -55,8 +55,8 @@ animate();
 function save() {
     console.log("Saving");
 
+    simStats.save(bestCar);
     alg.save();
-    localStorage.setItem("simStats", JSON.stringify(simStats));
 
     window.location.reload();
     /*
@@ -157,7 +157,7 @@ function animate(time) {
     // Make all other cars transparent
     carCtx.globalAlpha = 0.2;
     for (let i = 0; i < cars.length; i++) {
-        if (cars[i] != previousBestCar && cars[i] != bestCar)
+        if (cars[i] != previousBestCar && cars[i] != bestCar && (!alg?.eliteMode || cars[i].brain != simStats.bestPerformer?.brain))
         {
             cars[i].draw(carCtx, "blue");
         }
@@ -177,6 +177,13 @@ function animate(time) {
         if (cars.includes(previousBestCar))
         {
             previousBestCar.draw(carCtx, "green");
+        }
+    }
+
+    if (alg?.eliteMode && simStats?.bestPerformer?.brain) {
+        let eliteCar = cars.find(c => c.brain == simStats.bestPerformer.brain);
+        if (eliteCar) {
+            eliteCar.draw(carCtx, "gold");
         }
     }
 

@@ -1,14 +1,16 @@
 class GeneticEvolution {
-    constructor(cars, traffic) {
+    constructor(cars, traffic, simStats) {
         this.cars = cars;
         this.bestCar = cars[0];
+        this.simStats = simStats;
 
         this.crossoverRate = 1; // Needs to be 1 unless k-point crossover is implemented
         this.mutationRate = 0.1;
         this.mutationAlpha = 0.15;
 
-        this.elitismFactor = 5; // Number of top performing parents to be carried forward unaltered
+        this.elitismFactor = 4; // Number of top performing parents to be carried forward unaltered
 
+        this.eliteMode = true; // Keeps the best performing car across all generations
         if (localStorage.getItem("nextGenerationCandidates"))
         {
             this.parentBrains = JSON.parse(localStorage.getItem("nextGenerationCandidates"));
@@ -17,6 +19,7 @@ class GeneticEvolution {
 
         this.traffic = traffic;
         this.candidateRate = 0.025;
+        
     }
 
     mutate()
@@ -27,8 +30,15 @@ class GeneticEvolution {
             this.cars[i].brain = this.parentBrains[i];
         }
 
+        // Load best car of all generations
+        let loadEliteCar = this.eliteMode && this.simStats.bestPerformer.brain != null;
+        if (loadEliteCar)
+        {
+            this.cars[this.elitismFactor].brain = this.simStats.bestPerformer.brain;
+        }
+
         // Do random crossover and mutation for the remaining cars
-        for (let i = this.elitismFactor; i < this.cars.length; i++)
+        for (let i = this.elitismFactor + loadEliteCar; i < this.cars.length; i++)
         {
             let p1 = this.parentBrains[Math.floor(Math.random() * this.parentBrains.length)]
             let p2;
@@ -107,6 +117,15 @@ class GeneticEvolution {
 
     getNextGenerationCandidates()
     {
+        // Remove elite car from candidates
+        if (this.eliteMode && this.simStats?.bestPerformer?.brain != null)
+        {
+            let eliteCar = this.cars.findIndex(c => c.brain == this.simStats.bestPerformer.brain);
+            if (eliteCar >= 0) {
+                this.cars.splice(eliteCar, 1);
+            }
+        }
+
         this.cars.sort((a,b) => {
             if (a.carsPassed > b.carsPassed)
             {
