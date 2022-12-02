@@ -102,7 +102,7 @@ class Traffic {
         let currentY = this.last.y;
 
         for (let i = 0; i < this.incrementalTrafficGenerationRowCount; i++) {
-            currentY -= Math.floor(250 + Math.random() * 125)
+            currentY -= Math.floor(200 + Math.random() * 150)
 
             let availableLanes = Array.from(Array(this.laneCount).keys());
             let numCars = Math.floor(Math.random() * (this.laneCount - 1) + 1);

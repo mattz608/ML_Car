@@ -35,7 +35,8 @@ let barChart = new BarChart({
 
 // Generate cars
 const N = 2000;
-let cars = generateCars(N);
+let carSpeed = 8;
+let cars = generateCars(N, carSpeed);
 
 // Algorithm initialization
 algClasses = [LinearVariation, GeneticEvolution];
@@ -46,9 +47,15 @@ let bestCar = cars[0];
 let worstCar = cars[1];
 let lastBestCar = bestCar;
 let lastTimeBestCarChanged = Date.now();
-
-// Brain initializations
 const previousBestCar = bestCar;
+
+// Camera view
+    // This is actually the amount of pixels the road should be moved from its starting point (hence why we save and restore the context every time)
+let currentViewPoint = -bestCar.y + window.innerHeight * 0.5; 
+let destinationViewPoint = currentViewPoint;
+let translationSpeed = 0;
+let maxTranslationSpeed = 16;
+let translationAcceleration = 0.4;
 
 animate();
 
@@ -84,10 +91,10 @@ function drawNetworkVisualizer()
     simStats.networkVisualizerEnabled = simStats.networkVisualizerEnabled == false;
 }
 
-function generateCars(N) {
+function generateCars(N, carSpeed) {
     const cars = [];
     for (let i = 0; i < N; i++) {
-        cars.push(new Car(road.getLaneCenter(1), 100, 30, 50, "AI", 8));
+        cars.push(new Car(road.getLaneCenter(1), 100, 30, 50, "AI", carSpeed));
     }
 
     return cars;
@@ -149,7 +156,10 @@ function animate(time) {
 
     // Focus "camera" above car
     carCtx.save();
-    carCtx.translate(0, -nextBestCar.y + carCanvas.height * 0.5);
+
+    destinationViewPoint = -nextBestCar.y + carCanvas.height * 0.5;
+    updateCurrentViewPoint();
+    carCtx.translate(0, currentViewPoint);
     
     // Draw objects
     road.draw(carCtx);
@@ -165,7 +175,7 @@ function animate(time) {
     carCtx.globalAlpha = 0.2;
     for (let i = 0; i < cars.length; i++) {
         // Skip cars that wouldn't be visible in the window anyways
-        if (cars[i].y >= bestCar.y + carCanvas.height * 0.5)
+        if (cars[i].y >= bestCar.y + carCanvas.height)
         {
             continue;
         }
@@ -225,5 +235,38 @@ function animate(time) {
     {
         console.log("Reloading: " + Date.now());
         save();
+    }
+}
+
+function updateCurrentViewPoint()
+{
+    if (Math.abs(destinationViewPoint - currentViewPoint) <= carSpeed * 1.5)
+    {
+        currentViewPoint = destinationViewPoint;
+        translationSpeed = 0;
+    }
+    else if (destinationViewPoint < currentViewPoint)
+    {
+        currentViewPoint -= translationSpeed;
+        if (destinationViewPoint < currentViewPoint - translationSpeed)
+        {
+            translationSpeed = Math.min(translationSpeed + translationAcceleration, maxTranslationSpeed);
+        }
+        else
+        {
+            translationSpeed = Math.max(translationSpeed - translationAcceleration, 0);
+        }
+    }
+    else
+    {
+        currentViewPoint += translationSpeed;
+        if (destinationViewPoint > currentViewPoint + translationSpeed * 20)
+        {
+            translationSpeed = Math.min(translationSpeed + translationAcceleration, maxTranslationSpeed);
+        }
+        else
+        {
+            translationSpeed = Math.max(translationSpeed - translationAcceleration, 0);
+        }
     }
 }

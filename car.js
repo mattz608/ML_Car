@@ -11,6 +11,7 @@ class Car {
         this.friction = 0.05;
         this.angle = 0;
         this.damaged = false;
+        this.timeOfDeath = Number.MAX_VALUE;
 
         this.useBrain = controlType == "AI";
 
@@ -45,7 +46,14 @@ class Car {
 
         let relevantTraffic = traffic.cars.filter(t => distanceBetween(t.x, t.y, this.x, this.y) < this.sensor.rayLength ?? this.height * 2);
 
-        this.damaged = this.#assessDamage(roadBorders, relevantTraffic);
+        if (!this.damaged)
+        {
+            this.damaged = this.#assessDamage(roadBorders, relevantTraffic);
+            if (this.damaged)
+            {
+                this.timeOfDeath = Date.now();
+            }
+        }
 
         if (this.sensor) {
             this.sensor.update(this.x, this.y, this.angle, roadBorders, relevantTraffic);

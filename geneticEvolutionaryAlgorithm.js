@@ -155,7 +155,7 @@ class GeneticEvolution {
             }
             else
             {
-                if (a.y <= b.y) 
+                if (a.timeOfDeath <= b.timeOfDeath) 
                 {
                     return -1;
                 }
