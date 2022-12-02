@@ -105,7 +105,7 @@ class GeneticEvolution {
 
     getBestCar(cars=this.cars)
     {
-        let currBestCar = this.bestCar.damaged ? cars.find(c => !c.damaged) : this.bestCar;
+        let currBestCar = this.bestCar.damaged ? cars.find(c => !c.damaged) ?? this.cars[0] : this.bestCar;
 
         for (let i = 0; i < cars.length; i++)
         {
