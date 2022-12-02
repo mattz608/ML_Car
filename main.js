@@ -43,6 +43,7 @@ alg = new algClasses[1](cars, traffic, simStats);
 
 // Best car
 let bestCar = cars[0];
+let worstCar = cars[1];
 let lastBestCar = bestCar;
 let lastTimeBestCarChanged = Date.now();
 
@@ -115,7 +116,7 @@ function updateDisplayedStats()
 
 function animate(time) {
     // Update objects
-    traffic.update(road.borders, bestCar);
+    traffic.update(road.borders, bestCar, worstCar);
     for (let i = 0; i < cars.length; i++) {
         cars[i].update(road.borders, traffic);
     }
@@ -133,10 +134,13 @@ function animate(time) {
         lastTimeBestCarChanged = Date.now();
     }
 
-    // Get rid of unnecessary AI cars
+    // Determine worst car
+    worstCar = alg.getWorstCar(cars);
+
+    // Get rid of unnecessary AI cars. Those that are damaged and out of site, or those that haven't passed a car in 5 seconds
     cars = cars.filter(c => 
-        c.damaged == false && c.y <= bestCar.y + 600 ||
-        c.damaged == true && c.y <= -nextBestCar.y + carCanvas.height
+        c.damaged == false && Date.now() - c.lastTimePassedCar <= 5000 ||
+        c.damaged == true && c.y <= nextBestCar.y + carCanvas.height * 0.5
     );
 
     // Resize canvases to be height of the screen
@@ -147,16 +151,25 @@ function animate(time) {
     carCtx.save();
     carCtx.translate(0, -nextBestCar.y + carCanvas.height * 0.5);
     
-
     // Draw objects
     road.draw(carCtx);
     for (let i = 0; i < traffic.cars.length; i++) {
-        traffic.cars[i].draw(carCtx, "red");
+        // Draw only if the traffic would be seen in the window
+        if (traffic.cars[i].y <= bestCar.y + carCanvas.height * 0.5 && traffic.cars[i].y >= bestCar.y - carCanvas.height * 0.5)
+        {
+            traffic.cars[i].draw(carCtx, "red");
+        }
     }
 
     // Make all other cars transparent
     carCtx.globalAlpha = 0.2;
     for (let i = 0; i < cars.length; i++) {
+        // Skip cars that wouldn't be visible in the window anyways
+        if (cars[i].y >= bestCar.y + carCanvas.height * 0.5)
+        {
+            continue;
+        }
+
         if (cars[i] != previousBestCar && cars[i] != bestCar && (!alg?.eliteMode || cars[i].brain != simStats.bestPerformer?.brain))
         {
             cars[i].draw(carCtx, "blue");
@@ -180,6 +193,7 @@ function animate(time) {
         }
     }
 
+    // If elite mode, draw the car gold
     if (alg?.eliteMode && simStats?.bestPerformer?.brain) {
         let eliteCar = cars.find(c => c.brain == simStats.bestPerformer.brain);
         if (eliteCar) {
@@ -202,9 +216,8 @@ function animate(time) {
         Visualizer.drawNetwork(networkCtx, bestCar.brain);
     }
 
-    let stuckInTraffic = Date.now() - bestCar.lastTimePassedCar > 5000; // best car is stuck in traffic for more than 5 seconds
-    let allDead = !cars.some(c => c.damaged == false);
-    if (!stuckInTraffic && !allDead)
+    let allDead = cars.length == 0 || !cars.some(c => c.damaged == false);
+    if (!allDead)
     {
         requestAnimationFrame(animate);
     }

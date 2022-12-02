@@ -8,7 +8,7 @@ class GeneticEvolution {
         this.mutationRate = 0.1;
         this.mutationAlpha = 0.15;
 
-        this.elitismFactor = 4; // Number of top performing parents to be carried forward unaltered
+        this.elitismFactor = 5; // Number of top performing parents to be carried forward unaltered
 
         this.eliteMode = true; // Keeps the best performing car across all generations
         if (localStorage.getItem("nextGenerationCandidates"))
@@ -105,11 +105,11 @@ class GeneticEvolution {
 
     getBestCar(cars=this.cars)
     {
-        let currBestCar = this.bestCar ?? cars[0];
+        let currBestCar = this.bestCar.damaged ? cars.find(c => !c.damaged) : this.bestCar;
 
         for (let i = 0; i < cars.length; i++)
         {
-            if (cars[i].carsPassed >= currBestCar.carsPassed && cars[i].y < currBestCar.y)
+            if (!cars[i].damaged && cars[i].carsPassed >= currBestCar.carsPassed && cars[i].y < currBestCar.y)
             {
                 currBestCar = cars[i];
             }
@@ -117,6 +117,20 @@ class GeneticEvolution {
 
         this.bestCar = currBestCar;
         return currBestCar;
+    }
+
+    getWorstCar(cars=this.cars)
+    {
+        let worstCar = cars[0];
+        for (var i = 0; i < cars.length; i++)
+        {
+            if (cars[i].y > worstCar.y)
+            {
+                worstCar = cars[i];
+            }
+        }
+
+        return worstCar;
     }
 
     getNextGenerationCandidates()

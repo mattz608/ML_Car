@@ -11,6 +11,7 @@ class Traffic {
         this.cars = this.#getDefaultTraffic(this.laneCount);
 
         this.last = this.cars.find(t => t.y == Math.min(...this.cars.map(t2 => t2.y)));
+        this.first = this.cars.find(t => t.y == Math.max(...this.cars.map(t2 => t2.y)));
 
         this.trafficDeleted = 0;
     }
@@ -128,22 +129,27 @@ class Traffic {
         }
     }
 
-    #cleanUpTraffic(bestCar)
+    #cleanUpTraffic(worstCar)
     {
         this.trafficDeleted += this.cars.length;
-        this.cars = this.cars.filter(t => t.y < bestCar.y || Math.abs(t.y - bestCar.y) < 600);
+        this.cars = this.cars.filter(t => t.y < worstCar.y + window.innerHeight);
         this.trafficDeleted -= this.cars.length; // Super ugly way of keeping track of this... but oh well
     }
 
-    update(roadBoarders, bestCar)
+    update(roadBoarders, bestCar, worstCar)
     {
         for (let i = 0; i < this.cars.length; i++) {
             traffic.cars[i].update(roadBoarders);
         }
 
+        
+        if (worstCar.y < this.first.y)
+        {
+            this.#cleanUpTraffic(worstCar)
+        }
+        
         if (Math.abs(bestCar.y - this.last.y) < 500)
         {
-            this.#cleanUpTraffic(bestCar);
             this.#generateNewTraffic();
         }
     }
